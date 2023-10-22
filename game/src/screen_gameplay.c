@@ -35,7 +35,7 @@ static int finishScreen = 0;
 static Vector2 cursorPosition;
 static Vector2 playerPosition;
 static int playerSize = 24;
-static int playerGunLenght = 1;
+static int playerGunLenght = 12;
 static float playerSpeed = 0.3f;
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
@@ -56,14 +56,20 @@ void DrawPlayer()
         the origin needs to be the player position
     */
     //double angX = cursorPosition.x >= playerPosition.x ? 
-    double ang = atan2(-(playerPosition.x - cursorPosition.x), playerPosition.y - cursorPosition.y);
-    double gunX = playerPosition.x + (sin(ang) * 180 / PI) * playerGunLenght;// / playerGunLenght;
-    double gunY = (cos(ang) * 180 / PI) * playerGunLenght;// / playerGunLenght;
-    DrawText(TextFormat("X : %f; Y: %f", gunX, gunY), 10, 10, 10, WHITE);
-    DrawText(TextFormat("ang : %f;",ang * 180 / PI), 10, 20, 10, WHITE);
-    DrawLine(playerPosition.x, playerPosition.y, (int)gunX, GetScreenHeight() - (int)gunY, RED);
+    int tanX = playerPosition.x > cursorPosition.x ? -(playerPosition.x - cursorPosition.x) : cursorPosition.x - playerPosition.x;
+    int tanY = playerPosition.y > cursorPosition.y ? playerPosition.y - cursorPosition.y : 0;
+    double ang = atan2(tanY, tanX);
+    double gunX = playerPosition.x + sin(ang)  * playerGunLenght;
+    double gunY = playerPosition.y - cos(-ang) * playerGunLenght;
+    DrawText(TextFormat("sin : %f; cos: %f", sin(ang), cos(ang)), 10, 10, 10, WHITE);
+    DrawText(TextFormat("ang : %f; rad: %f ",ang * 180 / PI, ang), 10, 20, 10, WHITE);
+    DrawLine(playerPosition.x, playerPosition.y, gunX, gunY, RED);
     DrawCircle(playerPosition.x, playerPosition.y, playerSize / 2, RED);
-    DrawCircle(-(playerPosition.x - cursorPosition.x), GetScreenHeight() - cursorPosition.y, 6, GREEN);
+    DrawCircle(gunY, gunX, 6, GREEN);
+    DrawLine(playerPosition.x, playerPosition.y, cursorPosition.x, cursorPosition.y, GRAY);
+    DrawLine(playerPosition.x, playerPosition.y, cursorPosition.x, playerPosition.y, GRAY);
+    DrawLine(cursorPosition.x, cursorPosition.y, cursorPosition.x, playerPosition.y, GRAY);
+
 }
 
 // Gameplay Screen Initialization logic
