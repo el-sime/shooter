@@ -55,20 +55,23 @@ void DrawPlayer()
         atan2 gives the tangent of the angle of the point from the origin
         the origin needs to be the player position
     */
-    //double angX = cursorPosition.x >= playerPosition.x ? 
+    
     int tanX = playerPosition.x > cursorPosition.x ? -(playerPosition.x - cursorPosition.x) : cursorPosition.x - playerPosition.x;
     int tanY = playerPosition.y > cursorPosition.y ? playerPosition.y - cursorPosition.y : 0;
     double ang = atan2(tanY, tanX);
     double gunX = playerPosition.x + sin(ang)  * playerGunLenght;
-    double gunY = playerPosition.y - cos(-ang) * playerGunLenght;
-    DrawText(TextFormat("sin : %f; cos: %f", sin(ang), cos(ang)), 10, 10, 10, WHITE);
+    double gunY = playerPosition.y - cos(ang) * playerGunLenght;    
+    DrawText(TextFormat("tanX : %d; cos: %d", tanX, tanY), 10, 10, 10, WHITE);
     DrawText(TextFormat("ang : %f; rad: %f ",ang * 180 / PI, ang), 10, 20, 10, WHITE);
     DrawLine(playerPosition.x, playerPosition.y, gunX, gunY, RED);
+    
+    
     DrawCircle(playerPosition.x, playerPosition.y, playerSize / 2, RED);
-    DrawCircle(gunY, gunX, 6, GREEN);
+    
     DrawLine(playerPosition.x, playerPosition.y, cursorPosition.x, cursorPosition.y, GRAY);
     DrawLine(playerPosition.x, playerPosition.y, cursorPosition.x, playerPosition.y, GRAY);
     DrawLine(cursorPosition.x, cursorPosition.y, cursorPosition.x, playerPosition.y, GRAY);
+    DrawCircle(gunY, gunX, 1, GREEN);
 
 }
 
