@@ -26,7 +26,6 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "screens.h"
-
 //----------------------------------------------------------------------------------
 // Module Variables Definition (local)
 //----------------------------------------------------------------------------------
@@ -35,7 +34,7 @@ static int finishScreen = 0;
 static Vector2 cursorPosition;
 static Vector2 playerPosition;
 static int playerSize = 24;
-static int playerGunLenght = 12;
+static int playerGunLenght = 24;
 static float playerSpeed = 0.3f;
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
@@ -59,19 +58,23 @@ void DrawPlayer()
     int tanX = playerPosition.x > cursorPosition.x ? -(playerPosition.x - cursorPosition.x) : cursorPosition.x - playerPosition.x;
     int tanY = playerPosition.y > cursorPosition.y ? playerPosition.y - cursorPosition.y : 0;
     double ang = atan2(tanY, tanX);
-    double gunX = playerPosition.x + sin(ang)  * playerGunLenght;
-    double gunY = playerPosition.y - cos(ang) * playerGunLenght;    
-    DrawText(TextFormat("tanX : %d; cos: %d", tanX, tanY), 10, 10, 10, WHITE);
-    DrawText(TextFormat("ang : %f; rad: %f ",ang * 180 / PI, ang), 10, 20, 10, WHITE);
+
+    double gunX = playerPosition.x + cos(ang)  * playerGunLenght;
+    double gunY = playerPosition.y - sin(ang) * playerGunLenght;    
+    DrawCircle(playerPosition.x, playerPosition.y, playerSize / 2, RED);
     DrawLine(playerPosition.x, playerPosition.y, gunX, gunY, RED);
     
     
-    DrawCircle(playerPosition.x, playerPosition.y, playerSize / 2, RED);
+    DrawText(TextFormat("ang : %f; rad: %f ",ang * 180 / PI, ang), 10, 20, 10, WHITE);
+    DrawText(TextFormat("tanX : %d; cos: %d", tanX, tanY), 10, 10, 10, WHITE);
     
+    /*
     DrawLine(playerPosition.x, playerPosition.y, cursorPosition.x, cursorPosition.y, GRAY);
     DrawLine(playerPosition.x, playerPosition.y, cursorPosition.x, playerPosition.y, GRAY);
     DrawLine(cursorPosition.x, cursorPosition.y, cursorPosition.x, playerPosition.y, GRAY);
-    DrawCircle(gunY, gunX, 1, GREEN);
+    */
+    
+   
 
 }
 
