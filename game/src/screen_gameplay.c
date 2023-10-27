@@ -26,6 +26,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "screens.h"
+
 //----------------------------------------------------------------------------------
 // Module Variables Definition (local)
 //----------------------------------------------------------------------------------
@@ -35,7 +36,9 @@ static Vector2 cursorPosition;
 static Vector2 playerPosition;
 static int playerSize = 24;
 static int playerGunLenght = 24;
-static float playerSpeed = 0.3f;
+static float playerSpeed = 150.0f;
+static float playerProjectileSpeed = 300.0f;
+
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
 //----------------------------------------------------------------------------------
@@ -93,24 +96,19 @@ void InitGameplayScreen(void)
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
-    // TODO: Update GAMEPLAY screen variables here!
+    float dt = GetFrameTime();
     cursorPosition.x = GetMouseX();
     cursorPosition.y = GetMouseY();
-    // Press enter or tap to change to ENDING screen
-    if (IsKeyPressed(KEY_ENTER) )
-    {
-        finishScreen = 1;
-        PlaySound(fxCoin);
-    }
-
+    
     if (IsKeyDown(KEY_A))
     {
-        int newX = playerPosition.x - playerSpeed * GetFrameTime();
+        float newX = playerPosition.x - playerSpeed * dt;
         if (newX >= playerSize / 2) playerPosition.x = newX;
     }
+    
     if (IsKeyDown(KEY_D))
     {
-        int newX = playerPosition.x + playerSpeed * GetFrameTime();
+        float newX = playerPosition.x + playerSpeed * dt;
         if (newX <= GetScreenWidth()) playerPosition.x = newX;
     }
 }
