@@ -54,7 +54,7 @@ void DrawPlayer()
 {
     /*
         Calculate the angle of the gun
-        atan2 gives the tangent of the angle of the point from the origin
+        atan2 gives the angle of the point from the origin (in radians)
         the origin needs to be the player position
     */
     
@@ -66,19 +66,6 @@ void DrawPlayer()
     double gunY = playerPosition.y - sin(ang) * playerGunLenght;    
     DrawCircle(playerPosition.x, playerPosition.y, playerSize / 2, RED);
     DrawLine(playerPosition.x, playerPosition.y, gunX, gunY, RED);
-    
-    
-    DrawText(TextFormat("ang : %f; rad: %f ",ang * 180 / PI, ang), 10, 20, 10, WHITE);
-    DrawText(TextFormat("tanX : %d; cos: %d", tanX, tanY), 10, 10, 10, WHITE);
-    
-    /*
-    DrawLine(playerPosition.x, playerPosition.y, cursorPosition.x, cursorPosition.y, GRAY);
-    DrawLine(playerPosition.x, playerPosition.y, cursorPosition.x, playerPosition.y, GRAY);
-    DrawLine(cursorPosition.x, cursorPosition.y, cursorPosition.x, playerPosition.y, GRAY);
-    */
-    
-   
-
 }
 
 // Gameplay Screen Initialization logic
