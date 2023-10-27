@@ -27,6 +27,12 @@
 #include "raymath.h"
 #include "screens.h"
 
+typedef struct Bullets {
+    Vector2 origin;
+    Vector2 position;
+    Vector2 targetPosition;
+} Bullet;
+
 //----------------------------------------------------------------------------------
 // Module Variables Definition (local)
 //----------------------------------------------------------------------------------
@@ -38,6 +44,7 @@ static int playerSize = 24;
 static int playerGunLenght = 24;
 static float playerSpeed = 150.0f;
 static float playerProjectileSpeed = 300.0f;
+static Bullet bullets[640]; //640 bullets ought to be enough for anyone
 
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
@@ -80,6 +87,16 @@ void InitGameplayScreen(void)
     playerPosition.y = GetScreenHeight() - playerSize / 2;
 }
 
+void UpdateBullets()
+{
+    return;
+}
+
+void Fire(Vector2 origin, float speed, Vector2 target)
+{
+    return;
+}
+
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
@@ -98,6 +115,20 @@ void UpdateGameplayScreen(void)
         float newX = playerPosition.x + playerSpeed * dt;
         if (newX <= GetScreenWidth()) playerPosition.x = newX;
     }
+
+    if (IsMouseButtonDown(0))
+    {
+        // fire!
+    }
+    UpdateBullets();
+}
+
+void DrawBullets()
+{
+    for (int b = 0; b < sizeof(bullets) / sizeof(bullets[0]); b++)
+    {
+        DrawCircle(bullets[b].position.x, bullets[b].position.y, 12, WHITE);
+    }
 }
 
 // Gameplay Screen Draw logic
@@ -107,6 +138,7 @@ void DrawGameplayScreen(void)
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
     DrawCursor();
     DrawPlayer();
+    DrawBullets();
 }
 
 // Gameplay Screen Unload logic
