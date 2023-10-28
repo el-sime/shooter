@@ -26,8 +26,12 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "screens.h"
+#include <time.h>
 
-#define MAX_BULLETS  640 //640 bullets ought to be enough for anyone
+#define DEBUG_SEED 1234 
+#define MAX_BULLETS 640 //640 bullets ought to be enough for anyone
+#define MAX_ENEMIES 30 
+#define MIN_ENEMY_DISTANCE 200;
 
 typedef struct Bullets {
     Vector2 origin;
@@ -35,19 +39,38 @@ typedef struct Bullets {
     Vector2 targetPosition;
     float distance;
     float speed;
+    Color color;
 } Bullet;
+
+typedef struct Enemies {
+    Vector2 position;
+    int hitPoints;
+    float direction;
+    float speed;
+    Color color;
+} Enemy;
 
 //----------------------------------------------------------------------------------
 // Module Variables Definition (local)
 //----------------------------------------------------------------------------------
 static int framesCounter = 0;
 static int finishScreen = 0;
+static float elapsedTime = 0;
+
+
 static Vector2 cursorPosition;
 static Vector2 playerPosition;
 static int playerSize = 24;
 static int playerGunLenght = 24;
 static float playerSpeed = 150.0f;
 static float playerProjectileSpeed = 300.0f;
+
+static Enemy enemies[MAX_ENEMIES];
+static int enemyCounter = 0;
+
+
+
+
 static Bullet bullets[MAX_BULLETS];
 // Keep track of how many bullets are flying around
 // Need to be decreased every time a bullet disappears!
@@ -56,14 +79,12 @@ static int bulletCounter = 0;
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
 //----------------------------------------------------------------------------------
-void DrawCursor()
-{
-    DrawRectangle(cursorPosition.x - 15, cursorPosition.y - 3, 12, 6, RED);
-    DrawRectangle(cursorPosition.x + 3, cursorPosition.y - 3, 12, 6, RED);
-    DrawRectangle(cursorPosition.x - 3, cursorPosition.y - 15, 6, 12, RED);
-    DrawRectangle(cursorPosition.x - 3, cursorPosition.y + 3, 6, 12, RED);
-}
 
+/** 
+ * Calculate the coordinates of a point along a trajectory based on the distance
+ * travelled from the origin. 
+ * Can go beyond the target.
+**/
 Vector2 GetPointOnTrajectory(Vector2 origin, Vector2 target, float distance)
 {
     Vector2 point;
@@ -75,6 +96,45 @@ Vector2 GetPointOnTrajectory(Vector2 origin, Vector2 target, float distance)
     return point;
 }
 
+void SpawnEnemy()
+{
+    if (enemyCounter > MAX_ENEMIES) return;
+    
+    Enemy newEnemy;
+    newEnemy.color = BLUE;
+    newEnemy.hitPoints = 1;
+    newEnemy.speed = 150;
+    newEnemy.position.x = (rand() % 2) > 0 ? GetScreenWidth() - 12 : 12;
+    newEnemy.position.y = rand() % MIN_ENEMY_DISTANCE;
+    newEnemy.direction = newEnemy.position.x == 12 ? 1 : -1;
+    enemies[enemyCounter++] = newEnemy;
+}
+
+void UpdateEnemies()
+{
+    for (int e = 0; e < enemyCounter; e++)
+    {
+         float newX = (enemies[e].speed * GetFrameTime() * enemies[e].direction);
+         if (enemies[e].position.x + newX >= GetScreenWidth() - 12 || enemies[e].position.x + newX < 12) enemies[e].direction *= -1;
+         enemies[e].position.x += newX;
+    }
+}
+
+void DrawEnemies()
+{
+    for (int e = 0; e < enemyCounter; e++)
+    {
+        DrawRectangle(enemies[e].position.x, enemies[e].position.y, 24, 12, enemies[e].color);
+    }
+}
+
+void DrawCursor()
+{
+    DrawRectangle(cursorPosition.x - 15, cursorPosition.y - 3, 12, 6, RED);
+    DrawRectangle(cursorPosition.x + 3, cursorPosition.y - 3, 12, 6, RED);
+    DrawRectangle(cursorPosition.x - 3, cursorPosition.y - 15, 6, 12, RED);
+    DrawRectangle(cursorPosition.x - 3, cursorPosition.y + 3, 6, 12, RED);
+}
 
 void DrawPlayer()
 {
@@ -97,7 +157,8 @@ void DrawPlayer()
 // Gameplay Screen Initialization logic
 void InitGameplayScreen(void)
 {
-    // TODO: Initialize GAMEPLAY screen variables here!
+    // seed the RNG
+    srand(DEBUG_SEED);
     framesCounter = 0;
     finishScreen = 0;
     cursorPosition.x = (GetScreenWidth() / 2);
@@ -161,6 +222,7 @@ void Fire(Vector2 origin, float speed, Vector2 target)
 void UpdateGameplayScreen(void)
 {
     float dt = GetFrameTime();
+    elapsedTime += dt;
     cursorPosition.x = GetMouseX();
     cursorPosition.y = GetMouseY();
     
@@ -181,6 +243,12 @@ void UpdateGameplayScreen(void)
         // fire!
         Fire(playerPosition, playerProjectileSpeed, cursorPosition);
     }
+
+    if(enemyCounter < 3)
+    {
+        SpawnEnemy();
+    }
+    UpdateEnemies();
     UpdateBullets();
 }
 
@@ -199,8 +267,20 @@ void DrawGameplayScreen(void)
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
     DrawCursor();
     DrawPlayer();
+    DrawEnemies();
     DrawBullets();
-
+    DrawText(
+        TextFormat("Elapsed time:%d", elapsedTime),
+        128, 24,
+        24,
+        RAYWHITE
+    );
+    DrawText(
+        TextFormat("Enemy count:%d", enemyCounter),
+        48, 24,
+        24,
+        RAYWHITE
+    );
     DrawText(
         TextFormat("Bullets count:%d", bulletCounter), 
         12, 24, 
