@@ -55,7 +55,7 @@ typedef struct Enemies {
 //----------------------------------------------------------------------------------
 static int framesCounter = 0;
 static int finishScreen = 0;
-static float elapsedTime = 0;
+static float elapsedTime = 0.0f;
 
 
 static Vector2 cursorPosition;
@@ -67,7 +67,8 @@ static float playerProjectileSpeed = 300.0f;
 
 static Enemy enemies[MAX_ENEMIES];
 static int enemyCounter = 0;
-
+static int enemyClock = 0;
+static int lastEnemySpawn = -1;
 
 
 
@@ -223,6 +224,7 @@ void UpdateGameplayScreen(void)
 {
     float dt = GetFrameTime();
     elapsedTime += dt;
+    enemyClock = elapsedTime;
     cursorPosition.x = GetMouseX();
     cursorPosition.y = GetMouseY();
     
@@ -243,9 +245,10 @@ void UpdateGameplayScreen(void)
         // fire!
         Fire(playerPosition, playerProjectileSpeed, cursorPosition);
     }
-
-    if(enemyCounter < 3)
+    
+    if(enemyClock % 3 == 0 && enemyClock != lastEnemySpawn && enemyCounter < 3)
     {
+        lastEnemySpawn = enemyClock;
         SpawnEnemy();
     }
     UpdateEnemies();
@@ -270,14 +273,14 @@ void DrawGameplayScreen(void)
     DrawEnemies();
     DrawBullets();
     DrawText(
-        TextFormat("Elapsed time:%d", elapsedTime),
-        128, 24,
+        TextFormat("Elapsed time:%d", enemyClock),
+        600, 24,
         24,
         RAYWHITE
     );
     DrawText(
         TextFormat("Enemy count:%d", enemyCounter),
-        48, 24,
+        300, 24,
         24,
         RAYWHITE
     );
