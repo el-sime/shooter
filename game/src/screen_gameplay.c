@@ -27,10 +27,14 @@
 #include "raymath.h"
 #include "screens.h"
 
+#define MAX_BULLETS  640 //640 bullets ought to be enough for anyone
+
 typedef struct Bullets {
     Vector2 origin;
     Vector2 position;
     Vector2 targetPosition;
+    float distance;
+    float speed;
 } Bullet;
 
 //----------------------------------------------------------------------------------
@@ -44,7 +48,10 @@ static int playerSize = 24;
 static int playerGunLenght = 24;
 static float playerSpeed = 150.0f;
 static float playerProjectileSpeed = 300.0f;
-static Bullet bullets[640]; //640 bullets ought to be enough for anyone
+static Bullet bullets[MAX_BULLETS];
+// Keep track of how many bullets are flying around
+// Need to be decreased every time a bullet disappears!
+static int bulletCounter = 0;
 
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
@@ -56,6 +63,18 @@ void DrawCursor()
     DrawRectangle(cursorPosition.x - 3, cursorPosition.y - 15, 6, 12, RED);
     DrawRectangle(cursorPosition.x - 3, cursorPosition.y + 3, 6, 12, RED);
 }
+
+Vector2 GetPointOnTrajectory(Vector2 origin, Vector2 target, float distance)
+{
+    Vector2 point;
+    double tanX = origin.x > target.x ? -(origin.x - target.x) : target.x - origin.x;
+    double tanY = origin.y > target.y ? origin.y - target.y : target.y - origin.y;
+    double angle = atan2(tanY, tanX);
+    point.x = origin.x + cos(angle) * distance;
+    point.y = origin.y + sin(-angle) * distance;
+    return point;
+}
+
 
 void DrawPlayer()
 {
@@ -87,13 +106,54 @@ void InitGameplayScreen(void)
     playerPosition.y = GetScreenHeight() - playerSize / 2;
 }
 
+void DeleteBullet(int bulletIndex)
+{
+    if (bulletIndex > bulletCounter) return; //this shouldn't be possible, right?
+    for (int i = bulletIndex; i < bulletCounter - 1; i++)
+    {
+        bullets[i] = bullets[i + 1];
+    }
+    bulletCounter--;
+    return;
+}
+
 void UpdateBullets()
 {
+    for (int b = 0; b < bulletCounter; b++)
+    {
+        bullets[b].distance += playerProjectileSpeed * GetFrameTime();
+        Vector2 newBulletPosition = GetPointOnTrajectory(bullets[b].origin, bullets[b].targetPosition, bullets[b].distance);
+        // check collisions
+        // check out of screen
+        if (
+            newBulletPosition.x < 0 ||
+            newBulletPosition.x > GetScreenWidth() ||
+            newBulletPosition.y < 0 ||
+            newBulletPosition.y > GetScreenHeight()
+            )
+        {
+            DeleteBullet(b);
+        }
+        else 
+        {
+            bullets[b].position = newBulletPosition;
+        }
+    }
     return;
 }
 
 void Fire(Vector2 origin, float speed, Vector2 target)
 {
+    if(bulletCounter < MAX_BULLETS)
+    {
+        Bullet newBullet;
+        newBullet.origin = origin;
+        newBullet.position = origin;
+        newBullet.targetPosition = target;
+        newBullet.distance = 0;
+        newBullet.speed = playerProjectileSpeed;
+        bullets[bulletCounter++] = newBullet;
+    }
     return;
 }
 
@@ -116,18 +176,19 @@ void UpdateGameplayScreen(void)
         if (newX <= GetScreenWidth()) playerPosition.x = newX;
     }
 
-    if (IsMouseButtonDown(0))
+    if (IsMouseButtonPressed(0))
     {
         // fire!
+        Fire(playerPosition, playerProjectileSpeed, cursorPosition);
     }
     UpdateBullets();
 }
 
 void DrawBullets()
 {
-    for (int b = 0; b < sizeof(bullets) / sizeof(bullets[0]); b++)
+    for (int b = 0; b < bulletCounter; b++)
     {
-        DrawCircle(bullets[b].position.x, bullets[b].position.y, 12, WHITE);
+        DrawCircle(bullets[b].position.x, bullets[b].position.y, 4, WHITE);
     }
 }
 
@@ -139,6 +200,13 @@ void DrawGameplayScreen(void)
     DrawCursor();
     DrawPlayer();
     DrawBullets();
+
+    DrawText(
+        TextFormat("Bullets count:%d", bulletCounter), 
+        12, 24, 
+        24, 
+        RAYWHITE
+    );
 }
 
 // Gameplay Screen Unload logic
