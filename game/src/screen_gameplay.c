@@ -64,10 +64,12 @@ static int playerSize = 24;
 static int playerGunLenght = 24;
 static float playerSpeed = 150.0f;
 static float playerProjectileSpeed = 300.0f;
+static int playerBulletCounter = 0;
+static int lastPlayerBulletSpawn = -1;
 
 static Enemy enemies[MAX_ENEMIES];
 static int enemyCounter = 0;
-static int enemyClock = 0;
+static int gameClock = 0;
 static int lastEnemySpawn = -1;
 
 
@@ -99,16 +101,17 @@ Vector2 GetPointOnTrajectory(Vector2 origin, Vector2 target, float distance)
 
 void SpawnEnemy()
 {
-    if (enemyCounter > MAX_ENEMIES) return;
-    
-    Enemy newEnemy;
-    newEnemy.color = BLUE;
-    newEnemy.hitPoints = 1;
-    newEnemy.speed = 150;
-    newEnemy.position.x = (rand() % 2) > 0 ? GetScreenWidth() - 12 : 12;
-    newEnemy.position.y = rand() % MIN_ENEMY_DISTANCE;
-    newEnemy.direction = newEnemy.position.x == 12 ? 1 : -1;
-    enemies[enemyCounter++] = newEnemy;
+    if (enemyCounter < MAX_ENEMIES)
+    {
+        Enemy newEnemy;
+        newEnemy.color = BLUE;
+        newEnemy.hitPoints = 1;
+        newEnemy.speed = 150;
+        newEnemy.position.x = (rand() % 2) > 0 ? GetScreenWidth() - 12 : 12;
+        newEnemy.position.y = rand() % MIN_ENEMY_DISTANCE;
+        newEnemy.direction = newEnemy.position.x == 12 ? 1 : -1;
+        enemies[enemyCounter++] = newEnemy;
+    }
 }
 
 void UpdateEnemies()
@@ -158,7 +161,7 @@ void DrawPlayer()
 // Gameplay Screen Initialization logic
 void InitGameplayScreen(void)
 {
-    // seed the RNG
+    // seed the RNG 
     srand(DEBUG_SEED);
     framesCounter = 0;
     finishScreen = 0;
@@ -224,7 +227,7 @@ void UpdateGameplayScreen(void)
 {
     float dt = GetFrameTime();
     elapsedTime += dt;
-    enemyClock = elapsedTime;
+    gameClock = elapsedTime;
     cursorPosition.x = GetMouseX();
     cursorPosition.y = GetMouseY();
     
@@ -240,16 +243,25 @@ void UpdateGameplayScreen(void)
         if (newX <= GetScreenWidth()) playerPosition.x = newX;
     }
 
-    if (IsMouseButtonPressed(0))
+    if (IsMouseButtonDown(0)) // IsMouseButtonPressed = 1 shot per click; IsMouseButtonDown = continuous fire
     {
         // fire!
-        Fire(playerPosition, playerProjectileSpeed, cursorPosition);
+        int playerBulletClock = (elapsedTime * 1000);
+        if (playerBulletClock - lastPlayerBulletSpawn >= 300)
+        {
+            lastPlayerBulletSpawn = playerBulletClock;
+            Fire(playerPosition, playerProjectileSpeed, cursorPosition);
+        }
     }
     
-    if(enemyClock % 3 == 0 && enemyClock != lastEnemySpawn && enemyCounter < 3)
+    if(enemyCounter < 3)
     {
-        lastEnemySpawn = enemyClock;
-        SpawnEnemy();
+        int enemyClock = elapsedTime * 1000;
+        if(enemyClock - lastEnemySpawn >= 3000)
+        {
+            lastEnemySpawn = enemyClock;
+            SpawnEnemy();
+        }
     }
     UpdateEnemies();
     UpdateBullets();
@@ -273,7 +285,7 @@ void DrawGameplayScreen(void)
     DrawEnemies();
     DrawBullets();
     DrawText(
-        TextFormat("Elapsed time:%d", enemyClock),
+        TextFormat("Elapsed time:%d", gameClock),
         600, 24,
         24,
         RAYWHITE
