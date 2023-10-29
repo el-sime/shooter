@@ -31,23 +31,28 @@
 #define DEBUG_SEED 1234 
 #define MAX_BULLETS 640 //640 bullets ought to be enough for anyone
 #define MAX_ENEMIES 30 
-#define MIN_ENEMY_DISTANCE 200;
+#define MIN_ENEMY_DISTANCE 200
+#define BULLET_TYPE_PLAYER 0
+#define BULLET_TYPE_ENEMY 1
+
 
 typedef struct Bullets {
-    Vector2 origin;
-    Vector2 position;
-    Vector2 targetPosition;
-    float distance;
-    float speed;
-    Color color;
+	Vector2 origin;
+	Vector2 position;
+	Vector2 targetPosition;
+	float distance;
+	float speed;
+	Color color;
+	int type;
+	int damage;
 } Bullet;
 
 typedef struct Enemies {
-    Vector2 position;
-    int hitPoints;
-    float direction;
-    float speed;
-    Color color;
+	Vector2 position;
+	int hitPoints;
+	float direction;
+	float speed;
+	Color color;
 } Enemy;
 
 //----------------------------------------------------------------------------------
@@ -82,236 +87,279 @@ static int bulletCounter = 0;
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
 //----------------------------------------------------------------------------------
-
-/** 
+void DeleteEnemy(int enemyIndex);
+/**
  * Calculate the coordinates of a point along a trajectory based on the distance
- * travelled from the origin. 
+ * travelled from the origin.
  * Can go beyond the target.
 **/
 Vector2 GetPointOnTrajectory(Vector2 origin, Vector2 target, float distance)
 {
-    Vector2 point;
-    double tanX = origin.x > target.x ? -(origin.x - target.x) : target.x - origin.x;
-    double tanY = origin.y > target.y ? origin.y - target.y : target.y - origin.y;
-    double angle = atan2(tanY, tanX);
-    point.x = origin.x + cos(angle) * distance;
-    point.y = origin.y + sin(-angle) * distance;
-    return point;
+	Vector2 point;
+	double tanX = origin.x > target.x ? -(origin.x - target.x) : target.x - origin.x;
+	double tanY = origin.y > target.y ? origin.y - target.y : target.y - origin.y;
+	double angle = atan2(tanY, tanX);
+	point.x = origin.x + cos(angle) * distance;
+	point.y = origin.y + sin(-angle) * distance;
+	return point;
 }
 
 void SpawnEnemy()
 {
-    if (enemyCounter < MAX_ENEMIES)
-    {
-        Enemy newEnemy;
-        newEnemy.color = BLUE;
-        newEnemy.hitPoints = 1;
-        newEnemy.speed = 150;
-        newEnemy.position.x = (rand() % 2) > 0 ? GetScreenWidth() - 12 : 12;
-        newEnemy.position.y = rand() % MIN_ENEMY_DISTANCE;
-        newEnemy.direction = newEnemy.position.x == 12 ? 1 : -1;
-        enemies[enemyCounter++] = newEnemy;
-    }
+	if (enemyCounter < MAX_ENEMIES)
+	{
+		Enemy newEnemy;
+		newEnemy.color = BLUE;
+		newEnemy.hitPoints = 1;
+		newEnemy.speed = 150;
+		newEnemy.position.x = (rand() % 2) > 0 ? GetScreenWidth() - 12 : 12;
+		newEnemy.position.y = rand() % MIN_ENEMY_DISTANCE;
+		newEnemy.direction = newEnemy.position.x == 12 ? 1 : -1;
+		enemies[enemyCounter++] = newEnemy;
+	}
 }
 
 void UpdateEnemies()
 {
-    for (int e = 0; e < enemyCounter; e++)
-    {
-         float newX = (enemies[e].speed * GetFrameTime() * enemies[e].direction);
-         if (enemies[e].position.x + newX >= GetScreenWidth() - 12 || enemies[e].position.x + newX < 12) enemies[e].direction *= -1;
-         enemies[e].position.x += newX;
-    }
+	for (int e = 0; e < enemyCounter; e++)
+	{
+		if (enemies[e].hitPoints <= 0)
+		{
+			DeleteEnemy(e);
+			continue;
+		}
+		float newX = (enemies[e].speed * GetFrameTime() * enemies[e].direction);
+		if (enemies[e].position.x + newX >= GetScreenWidth() - 12 || enemies[e].position.x + newX < 12) enemies[e].direction *= -1;
+		enemies[e].position.x += newX;
+	}
 }
 
 void DrawEnemies()
 {
-    for (int e = 0; e < enemyCounter; e++)
-    {
-        DrawRectangle(enemies[e].position.x, enemies[e].position.y, 24, 12, enemies[e].color);
-    }
+	for (int e = 0; e < enemyCounter; e++)
+	{
+		DrawRectangle(enemies[e].position.x, enemies[e].position.y, 24, 12, enemies[e].color);
+	}
 }
 
 void DrawCursor()
 {
-    DrawRectangle(cursorPosition.x - 15, cursorPosition.y - 3, 12, 6, RED);
-    DrawRectangle(cursorPosition.x + 3, cursorPosition.y - 3, 12, 6, RED);
-    DrawRectangle(cursorPosition.x - 3, cursorPosition.y - 15, 6, 12, RED);
-    DrawRectangle(cursorPosition.x - 3, cursorPosition.y + 3, 6, 12, RED);
+	DrawRectangle(cursorPosition.x - 15, cursorPosition.y - 3, 12, 6, RED);
+	DrawRectangle(cursorPosition.x + 3, cursorPosition.y - 3, 12, 6, RED);
+	DrawRectangle(cursorPosition.x - 3, cursorPosition.y - 15, 6, 12, RED);
+	DrawRectangle(cursorPosition.x - 3, cursorPosition.y + 3, 6, 12, RED);
 }
 
 void DrawPlayer()
 {
-    /*
-        Calculate the angle of the gun
-        atan2 gives the angle of the point from the origin (in radians)
-        the origin needs to be the player position
-    */
-    
-    int tanX = playerPosition.x > cursorPosition.x ? -(playerPosition.x - cursorPosition.x) : cursorPosition.x - playerPosition.x;
-    int tanY = playerPosition.y > cursorPosition.y ? playerPosition.y - cursorPosition.y : 0;
-    double ang = atan2(tanY, tanX);
+	/*
+		Calculate the angle of the gun
+		atan2 gives the angle of the point from the origin (in radians)
+		the origin needs to be the player position
+	*/
 
-    double gunX = playerPosition.x + cos(ang)  * playerGunLenght;
-    double gunY = playerPosition.y - sin(ang) * playerGunLenght;    
-    DrawCircle(playerPosition.x, playerPosition.y, playerSize / 2, RED);
-    DrawLine(playerPosition.x, playerPosition.y, gunX, gunY, RED);
+	int tanX = playerPosition.x > cursorPosition.x ? -(playerPosition.x - cursorPosition.x) : cursorPosition.x - playerPosition.x;
+	int tanY = playerPosition.y > cursorPosition.y ? playerPosition.y - cursorPosition.y : 0;
+	double ang = atan2(tanY, tanX);
+
+	double gunX = playerPosition.x + cos(ang) * playerGunLenght;
+	double gunY = playerPosition.y - sin(ang) * playerGunLenght;
+	DrawCircle(playerPosition.x, playerPosition.y, playerSize / 2, RED);
+	DrawLine(playerPosition.x, playerPosition.y, gunX, gunY, RED);
 }
 
 // Gameplay Screen Initialization logic
 void InitGameplayScreen(void)
 {
-    // seed the RNG 
-    srand(DEBUG_SEED);
-    framesCounter = 0;
-    finishScreen = 0;
-    cursorPosition.x = (GetScreenWidth() / 2);
-    cursorPosition.y = (GetScreenHeight() / 2);
-    playerPosition.x = GetScreenWidth() / 2;
-    playerPosition.y = GetScreenHeight() - playerSize / 2;
+	// seed the RNG 
+	srand(DEBUG_SEED);
+	framesCounter = 0;
+	finishScreen = 0;
+	cursorPosition.x = (GetScreenWidth() / 2);
+	cursorPosition.y = (GetScreenHeight() / 2);
+	playerPosition.x = GetScreenWidth() / 2;
+	playerPosition.y = GetScreenHeight() - playerSize / 2;
 }
 
 void DeleteBullet(int bulletIndex)
 {
-    if (bulletIndex > bulletCounter) return; //this shouldn't be possible, right?
-    for (int i = bulletIndex; i < bulletCounter - 1; i++)
-    {
-        bullets[i] = bullets[i + 1];
-    }
-    bulletCounter--;
-    return;
+	if (bulletIndex > bulletCounter) return; //this shouldn't be possible, right?
+	for (int i = bulletIndex; i < bulletCounter - 1; i++)
+	{
+		bullets[i] = bullets[i + 1];
+	}
+	bulletCounter--;
+	return;
 }
 
+void DeleteEnemy(int enemyIndex)
+{
+	if (enemyIndex > enemyCounter) return; //this shouldn't be possible, right?
+	for (int i = enemyIndex; i < enemyCounter - 1; i++)
+	{
+		enemies[i] = enemies[i + 1];
+	}
+	enemyCounter--;
+	return;
+}
+
+
+int GetEnemyHitByBullet(Vector2 bulletPosition)
+{
+	for (int e = 0; e < enemyCounter; e++)
+	{ //enemies[e].position.x, enemies[e].position.y, 24, 12,
+		Rectangle enemyRect;
+		enemyRect.x = enemies[e].position.x;
+		enemyRect.y = enemies[e].position.y;
+		enemyRect.width = 24;
+		enemyRect.height = 12;
+
+		if(CheckCollisionPointRec(bulletPosition, enemyRect))
+		{
+			return e;
+		}
+	}
+	return -1;
+}
 void UpdateBullets()
 {
-    for (int b = 0; b < bulletCounter; b++)
-    {
-        bullets[b].distance += playerProjectileSpeed * GetFrameTime();
-        Vector2 newBulletPosition = GetPointOnTrajectory(bullets[b].origin, bullets[b].targetPosition, bullets[b].distance);
-        // check collisions
-        // check out of screen
-        if (
-            newBulletPosition.x < 0 ||
-            newBulletPosition.x > GetScreenWidth() ||
-            newBulletPosition.y < 0 ||
-            newBulletPosition.y > GetScreenHeight()
-            )
-        {
-            DeleteBullet(b);
-        }
-        else 
-        {
-            bullets[b].position = newBulletPosition;
-        }
-    }
-    return;
+	for (int b = 0; b < bulletCounter; b++)
+	{
+		bullets[b].distance += playerProjectileSpeed * GetFrameTime();
+		Vector2 newBulletPosition = GetPointOnTrajectory(bullets[b].origin, bullets[b].targetPosition, bullets[b].distance);
+
+		// check out of screen
+		if (
+			newBulletPosition.x < 0 ||
+			newBulletPosition.x > GetScreenWidth() ||
+			newBulletPosition.y < 0 ||
+			newBulletPosition.y > GetScreenHeight()
+			)
+		{
+			DeleteBullet(b);
+			continue;
+		}
+		if (bullets[b].type == BULLET_TYPE_PLAYER)
+		{
+			int enemyHit = GetEnemyHitByBullet(newBulletPosition);
+			if (enemyHit > -1) {
+				enemies[enemyHit].hitPoints -= bullets[b].damage;
+				DeleteBullet(b);
+				continue;
+			}
+		}
+		bullets[b].position = newBulletPosition;
+	}
+	return;
 }
 
 void Fire(Vector2 origin, float speed, Vector2 target)
 {
-    if(bulletCounter < MAX_BULLETS)
-    {
-        Bullet newBullet;
-        newBullet.origin = origin;
-        newBullet.position = origin;
-        newBullet.targetPosition = target;
-        newBullet.distance = 0;
-        newBullet.speed = playerProjectileSpeed;
-        bullets[bulletCounter++] = newBullet;
-    }
-    return;
+	if (bulletCounter < MAX_BULLETS)
+	{
+		Bullet newBullet;
+		newBullet.origin = origin;
+		newBullet.position = origin;
+		newBullet.targetPosition = target;
+		newBullet.distance = 0;
+		newBullet.speed = playerProjectileSpeed;
+		newBullet.type = BULLET_TYPE_PLAYER;
+		newBullet.damage = 1;
+		bullets[bulletCounter++] = newBullet;
+	}
+	return;
 }
 
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
-    float dt = GetFrameTime();
-    elapsedTime += dt;
-    gameClock = elapsedTime;
-    cursorPosition.x = GetMouseX();
-    cursorPosition.y = GetMouseY();
-    
-    if (IsKeyDown(KEY_A))
-    {
-        float newX = playerPosition.x - playerSpeed * dt;
-        if (newX >= playerSize / 2) playerPosition.x = newX;
-    }
-    
-    if (IsKeyDown(KEY_D))
-    {
-        float newX = playerPosition.x + playerSpeed * dt;
-        if (newX <= GetScreenWidth()) playerPosition.x = newX;
-    }
+	float dt = GetFrameTime();
+	elapsedTime += dt;
+	gameClock = elapsedTime;
+	cursorPosition.x = GetMouseX();
+	cursorPosition.y = GetMouseY();
 
-    if (IsMouseButtonDown(0)) // IsMouseButtonPressed = 1 shot per click; IsMouseButtonDown = continuous fire
-    {
-        // fire!
-        int playerBulletClock = (elapsedTime * 1000);
-        if (playerBulletClock - lastPlayerBulletSpawn >= 300)
-        {
-            lastPlayerBulletSpawn = playerBulletClock;
-            Fire(playerPosition, playerProjectileSpeed, cursorPosition);
-        }
-    }
-    
-    if(enemyCounter < 3)
-    {
-        int enemyClock = elapsedTime * 1000;
-        if(enemyClock - lastEnemySpawn >= 3000)
-        {
-            lastEnemySpawn = enemyClock;
-            SpawnEnemy();
-        }
-    }
-    UpdateEnemies();
-    UpdateBullets();
+	if (IsKeyDown(KEY_A))
+	{
+		float newX = playerPosition.x - playerSpeed * dt;
+		if (newX >= playerSize / 2) playerPosition.x = newX;
+	}
+
+	if (IsKeyDown(KEY_D))
+	{
+		float newX = playerPosition.x + playerSpeed * dt;
+		if (newX <= GetScreenWidth()) playerPosition.x = newX;
+	}
+
+	if (IsMouseButtonDown(0)) // IsMouseButtonPressed = 1 shot per click; IsMouseButtonDown = continuous fire
+	{
+		// fire!
+		int playerBulletClock = (elapsedTime * 1000);
+		if (playerBulletClock - lastPlayerBulletSpawn >= 300)
+		{
+			lastPlayerBulletSpawn = playerBulletClock;
+			Fire(playerPosition, playerProjectileSpeed, cursorPosition);
+		}
+	}
+
+	if (enemyCounter < 3)
+	{
+		int enemyClock = elapsedTime * 1000;
+		if (enemyClock - lastEnemySpawn >= 3000)
+		{
+			lastEnemySpawn = enemyClock;
+			SpawnEnemy();
+		}
+	}
+	UpdateEnemies();
+	UpdateBullets();
 }
 
 void DrawBullets()
 {
-    for (int b = 0; b < bulletCounter; b++)
-    {
-        DrawCircle(bullets[b].position.x, bullets[b].position.y, 4, WHITE);
-    }
+	for (int b = 0; b < bulletCounter; b++)
+	{
+		DrawCircle(bullets[b].position.x, bullets[b].position.y, 4, WHITE);
+	}
 }
 
 // Gameplay Screen Draw logic
 void DrawGameplayScreen(void)
 {
-    // TODO: Draw GAMEPLAY screen here!
-    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
-    DrawCursor();
-    DrawPlayer();
-    DrawEnemies();
-    DrawBullets();
-    DrawText(
-        TextFormat("Elapsed time:%d", gameClock),
-        600, 24,
-        24,
-        RAYWHITE
-    );
-    DrawText(
-        TextFormat("Enemy count:%d", enemyCounter),
-        300, 24,
-        24,
-        RAYWHITE
-    );
-    DrawText(
-        TextFormat("Bullets count:%d", bulletCounter), 
-        12, 24, 
-        24, 
-        RAYWHITE
-    );
+	// TODO: Draw GAMEPLAY screen here!
+	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
+	DrawCursor();
+	DrawPlayer();
+	DrawEnemies();
+	DrawBullets();
+	DrawText(
+		TextFormat("Elapsed time:%d", gameClock),
+		600, 24,
+		24,
+		RAYWHITE
+	);
+	DrawText(
+		TextFormat("Enemy count:%d", enemyCounter),
+		300, 24,
+		24,
+		RAYWHITE
+	);
+	DrawText(
+		TextFormat("Bullets count:%d", bulletCounter),
+		12, 24,
+		24,
+		RAYWHITE
+	);
 }
 
 // Gameplay Screen Unload logic
 void UnloadGameplayScreen(void)
 {
-    // TODO: Unload GAMEPLAY screen variables here!
+	// TODO: Unload GAMEPLAY screen variables here!
 }
 
 // Gameplay Screen should finish?
 int FinishGameplayScreen(void)
 {
-    return finishScreen;
+	return finishScreen;
 }
