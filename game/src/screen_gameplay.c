@@ -31,7 +31,7 @@
 #define DEBUG_SEED 1234 
 #define MAX_BULLETS 640 //640 bullets ought to be enough for anyone
 #define MAX_ENEMIES 30 
-#define MIN_ENEMY_DISTANCE 200
+#define MIN_ENEMY_DISTANCE 192
 #define BULLET_TYPE_PLAYER 0
 #define BULLET_TYPE_ENEMY 1
 
