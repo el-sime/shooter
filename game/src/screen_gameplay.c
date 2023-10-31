@@ -34,6 +34,14 @@
 #define MIN_ENEMY_DISTANCE 192
 #define BULLET_TYPE_PLAYER 0
 #define BULLET_TYPE_ENEMY 1
+#define ROWS 16
+#define COLS 25
+#define TILE_SIZE 32
+
+// the level layers
+int levelBackground[16][25];
+int levelForeground[16][25];
+int levelItems[16][25];
 
 
 typedef struct Bullets {
@@ -46,6 +54,7 @@ typedef struct Bullets {
 	int type;
 	int damage;
 } Bullet;
+
 
 typedef struct Enemies {
 	Vector2 position;
@@ -87,6 +96,26 @@ static int bulletCounter = 0;
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
 //----------------------------------------------------------------------------------
+
+//hardcoded level, should load from file
+void LoadLevel()
+{
+	for (int y = 0; y < ROWS; y++)
+	{
+		for (int x = 0; x < COLS; x++)
+		{
+			levelBackground[y][x] = 0;
+			levelForeground[y][x] = 0;
+			if (y == 12 && (x == 2 || x == 3)) {
+				levelForeground[y][x] = 1;
+			}
+
+			if (y == 12 && (x == 22 || x == 23)) {
+				levelForeground[y][x] = 1;
+			}
+		}
+	}
+}
 void DeleteEnemy(int enemyIndex);
 /**
  * Calculate the coordinates of a point along a trajectory based on the distance
@@ -179,6 +208,7 @@ void InitGameplayScreen(void)
 	cursorPosition.y = (GetScreenHeight() / 2);
 	playerPosition.x = GetScreenWidth() / 2;
 	playerPosition.y = GetScreenHeight() - playerSize / 2;
+	LoadLevel();
 }
 
 void DeleteBullet(int bulletIndex)
@@ -221,6 +251,30 @@ int GetEnemyHitByBullet(Vector2 bulletPosition)
 	}
 	return -1;
 }
+
+bool IsWallCollision(Vector2 bulletPosition)
+{
+	Rectangle rec;
+	for (int y = 0; y < ROWS; y++)
+	{
+		for (int x = 0; x < COLS; x++)
+		{
+
+			if (levelForeground[y][x] > 0)
+			{
+				rec.x = x * TILE_SIZE;
+				rec.y = y * TILE_SIZE;
+				rec.width = TILE_SIZE;
+				rec.height = TILE_SIZE;
+				if (CheckCollisionPointRec(bulletPosition, rec))
+					return true;
+			}
+		}
+	}
+	return false;
+}
+
+
 void UpdateBullets()
 {
 	for (int b = 0; b < bulletCounter; b++)
@@ -239,6 +293,15 @@ void UpdateBullets()
 			DeleteBullet(b);
 			continue;
 		}
+		// check structures collision
+		if (IsWallCollision(newBulletPosition))
+		{
+			DeleteBullet(b);
+			continue;
+		}
+	
+
+
 		if (bullets[b].type == BULLET_TYPE_PLAYER)
 		{
 			int enemyHit = GetEnemyHitByBullet(newBulletPosition);
@@ -248,6 +311,9 @@ void UpdateBullets()
 				continue;
 			}
 		}
+
+
+		//if(CheckCollisionPointRec(newBulletPosition, enemyRect)
 		bullets[b].position = newBulletPosition;
 	}
 	return;
@@ -269,6 +335,23 @@ void Fire(Vector2 origin, float speed, Vector2 target)
 	}
 	return;
 }
+
+void DrawStructures()
+{
+	for (int y = 0; y < ROWS; y++)
+	{
+		for (int x = 0; x < COLS; x++)
+		{
+			
+			if (levelForeground[y][x] == 1)
+			{
+				DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, DARKBROWN);
+			}
+		}
+	}
+	return;
+}
+
 
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
@@ -332,6 +415,7 @@ void DrawGameplayScreen(void)
 	DrawPlayer();
 	DrawEnemies();
 	DrawBullets();
+	DrawStructures();
 	DrawText(
 		TextFormat("Elapsed time:%d", gameClock),
 		600, 24,
