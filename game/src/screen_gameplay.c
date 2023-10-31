@@ -251,6 +251,30 @@ int GetEnemyHitByBullet(Vector2 bulletPosition)
 	}
 	return -1;
 }
+
+bool IsWallCollision(Vector2 bulletPosition)
+{
+	Rectangle rec;
+	for (int y = 0; y < ROWS; y++)
+	{
+		for (int x = 0; x < COLS; x++)
+		{
+
+			if (levelForeground[y][x] > 0)
+			{
+				rec.x = x * TILE_SIZE;
+				rec.y = y * TILE_SIZE;
+				rec.width = TILE_SIZE;
+				rec.height = TILE_SIZE;
+				if (CheckCollisionPointRec(bulletPosition, rec))
+					return true;
+			}
+		}
+	}
+	return false;
+}
+
+
 void UpdateBullets()
 {
 	for (int b = 0; b < bulletCounter; b++)
@@ -269,6 +293,15 @@ void UpdateBullets()
 			DeleteBullet(b);
 			continue;
 		}
+		// check structures collision
+		if (IsWallCollision(newBulletPosition))
+		{
+			DeleteBullet(b);
+			continue;
+		}
+	
+
+
 		if (bullets[b].type == BULLET_TYPE_PLAYER)
 		{
 			int enemyHit = GetEnemyHitByBullet(newBulletPosition);
