@@ -22,11 +22,11 @@
 *     3. This notice may not be removed or altered from any source distribution.
 *
 **********************************************************************************************/
-
+#include <time.h>
 #include "raylib.h"
 #include "raymath.h"
 #include "screens.h"
-#include <time.h>
+#include "levels.h"
 
 #define DEBUG_SEED 1234 
 #define MAX_BULLETS 640 //640 bullets ought to be enough for anyone
@@ -34,15 +34,6 @@
 #define MIN_ENEMY_DISTANCE 192
 #define BULLET_TYPE_PLAYER 0
 #define BULLET_TYPE_ENEMY 1
-#define ROWS 16
-#define COLS 25
-#define TILE_SIZE 32
-
-// the level layers
-int levelBackground[16][25];
-int levelForeground[16][25];
-int levelItems[16][25];
-
 
 typedef struct Bullets {
 	Vector2 origin;
@@ -86,8 +77,7 @@ static int enemyCounter = 0;
 static int gameClock = 0;
 static int lastEnemySpawn = -1;
 
-
-
+static Level *currentLevel = &level1;
 static Bullet bullets[MAX_BULLETS];
 // Keep track of how many bullets are flying around
 // Need to be decreased every time a bullet disappears!
@@ -97,25 +87,6 @@ static int bulletCounter = 0;
 // Gameplay Screen Functions Definition
 //----------------------------------------------------------------------------------
 
-//hardcoded level, should load from file
-void LoadLevel()
-{
-	for (int y = 0; y < ROWS; y++)
-	{
-		for (int x = 0; x < COLS; x++)
-		{
-			levelBackground[y][x] = 0;
-			levelForeground[y][x] = 0;
-			if (y == 12 && (x == 2 || x == 3)) {
-				levelForeground[y][x] = 1;
-			}
-
-			if (y == 12 && (x == 22 || x == 23)) {
-				levelForeground[y][x] = 1;
-			}
-		}
-	}
-}
 void DeleteEnemy(int enemyIndex);
 /**
  * Calculate the coordinates of a point along a trajectory based on the distance
@@ -208,7 +179,6 @@ void InitGameplayScreen(void)
 	cursorPosition.y = (GetScreenHeight() / 2);
 	playerPosition.x = GetScreenWidth() / 2;
 	playerPosition.y = GetScreenHeight() - playerSize / 2;
-	LoadLevel();
 }
 
 void DeleteBullet(int bulletIndex)
@@ -260,7 +230,7 @@ bool IsWallCollision(Vector2 bulletPosition)
 		for (int x = 0; x < COLS; x++)
 		{
 
-			if (levelForeground[y][x] > 0)
+			if (currentLevel->foreground[y][x] > 0)
 			{
 				rec.x = x * TILE_SIZE;
 				rec.y = y * TILE_SIZE;
@@ -343,7 +313,7 @@ void DrawStructures()
 		for (int x = 0; x < COLS; x++)
 		{
 			
-			if (levelForeground[y][x] == 1)
+			if (currentLevel->foreground[y][x] == 1)
 			{
 				DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, DARKBROWN);
 			}
