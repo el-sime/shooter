@@ -77,7 +77,7 @@ static int enemyCounter = 0;
 static int gameClock = 0;
 static int lastEnemySpawn = -1;
 
-static Level *currentLevel = &level1;
+static Level* currentLevel = &level1;
 static Bullet bullets[MAX_BULLETS];
 // Keep track of how many bullets are flying around
 // Need to be decreased every time a bullet disappears!
@@ -214,7 +214,7 @@ int GetEnemyHitByBullet(Vector2 bulletPosition)
 		enemyRect.width = 24;
 		enemyRect.height = 12;
 
-		if(CheckCollisionPointRec(bulletPosition, enemyRect))
+		if (CheckCollisionPointRec(bulletPosition, enemyRect))
 		{
 			return e;
 		}
@@ -269,7 +269,7 @@ void UpdateBullets()
 			DeleteBullet(b);
 			continue;
 		}
-	
+
 
 
 		if (bullets[b].type == BULLET_TYPE_PLAYER)
@@ -306,13 +306,33 @@ void Fire(Vector2 origin, float speed, Vector2 target)
 	return;
 }
 
+void DrawBackground()
+{
+	for (int y = 0; y < ROWS; y++)
+	{
+		for (int x = 0; x < COLS; x++)
+		{
+			if (currentLevel->background[y][x] == 1)
+			{
+				DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, DARKGREEN);
+			}
+			if (currentLevel->background[y][x] == 2)
+			{
+				DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, DARKGRAY);
+			}
+
+		}
+	}
+	return;
+}
+
 void DrawStructures()
 {
 	for (int y = 0; y < ROWS; y++)
 	{
 		for (int x = 0; x < COLS; x++)
 		{
-			
+
 			if (currentLevel->foreground[y][x] == 1)
 			{
 				DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, DARKBROWN);
@@ -381,6 +401,7 @@ void DrawGameplayScreen(void)
 {
 	// TODO: Draw GAMEPLAY screen here!
 	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
+	DrawBackground();
 	DrawCursor();
 	DrawPlayer();
 	DrawEnemies();
