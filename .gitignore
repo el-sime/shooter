@@ -2,3 +2,6 @@ raylib-master
 _build
 _bin
 .vs
+/node_modules
+/package-lock.json
+/package.json
