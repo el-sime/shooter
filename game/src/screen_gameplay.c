@@ -53,6 +53,8 @@ typedef struct Enemies {
 	float direction;
 	float speed;
 	Color color;
+	int lastFired;
+
 } Enemy;
 
 //----------------------------------------------------------------------------------
@@ -71,12 +73,13 @@ static float playerSpeed = 150.0f;
 static float playerProjectileSpeed = 300.0f;
 static int playerBulletCounter = 0;
 static int lastPlayerBulletSpawn = -1;
+static int playerHitPoints = 3; 
 
 static Enemy enemies[MAX_ENEMIES];
 static int enemyCounter = 0;
 static int gameClock = 0;
 static int lastEnemySpawn = -1;
-
+static int killCounter = 0;
 static Level* currentLevel = &level1;
 static Bullet bullets[MAX_BULLETS];
 // Keep track of how many bullets are flying around
@@ -86,21 +89,21 @@ static int bulletCounter = 0;
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
 //----------------------------------------------------------------------------------
-
+void Fire(Vector2 origin, float speed, Vector2 target, int type);
 void DeleteEnemy(int enemyIndex);
 /**
  * Calculate the coordinates of a point along a trajectory based on the distance
  * travelled from the origin.
  * Can go beyond the target.
 **/
-Vector2 GetPointOnTrajectory(Vector2 origin, Vector2 target, float distance)
+Vector2 GetPointOnTrajectory(Vector2 origin, Vector2 target, float distance, int direction)
 {
 	Vector2 point;
 	double tanX = origin.x > target.x ? -(origin.x - target.x) : target.x - origin.x;
 	double tanY = origin.y > target.y ? origin.y - target.y : target.y - origin.y;
 	double angle = atan2(tanY, tanX);
 	point.x = origin.x + cos(angle) * distance;
-	point.y = origin.y + sin(-angle) * distance;
+	point.y = origin.y + (sin(-angle) * distance) * direction;
 	return point;
 }
 
@@ -131,6 +134,14 @@ void UpdateEnemies()
 		float newX = (enemies[e].speed * GetFrameTime() * enemies[e].direction);
 		if (enemies[e].position.x + newX >= GetScreenWidth() - 12 || enemies[e].position.x + newX < 12) enemies[e].direction *= -1;
 		enemies[e].position.x += newX;
+
+		int enemyBulletClock = elapsedTime * 1000;
+		if (enemyBulletClock - enemies[e].lastFired >= 800)
+		{
+			Fire(enemies[e].position, 400.0f, playerPosition, BULLET_TYPE_ENEMY);
+			enemies[e].lastFired = enemyBulletClock;
+		}
+
 	}
 }
 
@@ -200,6 +211,7 @@ void DeleteEnemy(int enemyIndex)
 		enemies[i] = enemies[i + 1];
 	}
 	enemyCounter--;
+	killCounter++;
 	return;
 }
 
@@ -250,7 +262,8 @@ void UpdateBullets()
 	for (int b = 0; b < bulletCounter; b++)
 	{
 		bullets[b].distance += playerProjectileSpeed * GetFrameTime();
-		Vector2 newBulletPosition = GetPointOnTrajectory(bullets[b].origin, bullets[b].targetPosition, bullets[b].distance);
+		int bulletDirection = bullets[b].type == BULLET_TYPE_PLAYER ? 1 : -1;
+		Vector2 newBulletPosition = GetPointOnTrajectory(bullets[b].origin, bullets[b].targetPosition, bullets[b].distance, bulletDirection);
 
 		// check out of screen
 		if (
@@ -281,6 +294,14 @@ void UpdateBullets()
 				continue;
 			}
 		}
+		else
+		{
+			if (CheckCollisionCircles(bullets[b].position, 4, playerPosition, playerSize))
+			{
+				playerHitPoints -= bullets[b].damage;
+				DeleteBullet(b);
+			}
+		}
 
 
 		//if(CheckCollisionPointRec(newBulletPosition, enemyRect)
@@ -289,7 +310,7 @@ void UpdateBullets()
 	return;
 }
 
-void Fire(Vector2 origin, float speed, Vector2 target)
+void Fire(Vector2 origin, float speed, Vector2 target, int type)
 {
 	if (bulletCounter < MAX_BULLETS)
 	{
@@ -298,8 +319,8 @@ void Fire(Vector2 origin, float speed, Vector2 target)
 		newBullet.position = origin;
 		newBullet.targetPosition = target;
 		newBullet.distance = 0;
-		newBullet.speed = playerProjectileSpeed;
-		newBullet.type = BULLET_TYPE_PLAYER;
+		newBullet.speed = speed;
+		newBullet.type = type;
 		newBullet.damage = 1;
 		bullets[bulletCounter++] = newBullet;
 	}
@@ -352,6 +373,11 @@ void UpdateGameplayScreen(void)
 	cursorPosition.x = GetMouseX();
 	cursorPosition.y = GetMouseY();
 
+	if (playerHitPoints <= 0)
+	{
+		finishScreen = 1;
+	}
+
 	if (IsKeyDown(KEY_A))
 	{
 		float newX = playerPosition.x - playerSpeed * dt;
@@ -371,7 +397,7 @@ void UpdateGameplayScreen(void)
 		if (playerBulletClock - lastPlayerBulletSpawn >= 300)
 		{
 			lastPlayerBulletSpawn = playerBulletClock;
-			Fire(playerPosition, playerProjectileSpeed, cursorPosition);
+			Fire(playerPosition, playerProjectileSpeed, cursorPosition, BULLET_TYPE_PLAYER);
 		}
 	}
 
@@ -393,6 +419,10 @@ void DrawBullets()
 	for (int b = 0; b < bulletCounter; b++)
 	{
 		DrawCircle(bullets[b].position.x, bullets[b].position.y, 4, WHITE);
+		if (bullets[b].type == BULLET_TYPE_ENEMY)
+		{
+			DrawCircle(bullets[b].position.x, bullets[b].position.y, 3, RED);
+		}
 	}
 }
 
@@ -408,19 +438,19 @@ void DrawGameplayScreen(void)
 	DrawBullets();
 	DrawStructures();
 	DrawText(
-		TextFormat("Elapsed time:%d", gameClock),
+		TextFormat("Elapsed time: %d", gameClock),
 		600, 24,
 		24,
 		RAYWHITE
 	);
 	DrawText(
-		TextFormat("Enemy count:%d", enemyCounter),
+		TextFormat("Enemies killed: %d", killCounter),
 		300, 24,
 		24,
 		RAYWHITE
 	);
 	DrawText(
-		TextFormat("Bullets count:%d", bulletCounter),
+		TextFormat("HP: %d", playerHitPoints),
 		12, 24,
 		24,
 		RAYWHITE
@@ -431,6 +461,7 @@ void DrawGameplayScreen(void)
 void UnloadGameplayScreen(void)
 {
 	// TODO: Unload GAMEPLAY screen variables here!
+	
 }
 
 // Gameplay Screen should finish?
