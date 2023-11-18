@@ -114,7 +114,12 @@ void DrawStart()
 	DrawText(pressEnterToStart, GetScreenWidth() / 2 - textWidth / 2, GetScreenHeight() / 2 - 18, 36, RED);
 	return;
 }
-
+void DrawGameOver()
+{
+	const char* pressEnterToStart = "Game Over. Press [Enter] to go back to main menu.";
+	int textWidth = MeasureText(pressEnterToStart, 28);
+	DrawText(pressEnterToStart, GetScreenWidth() / 2 - textWidth / 2, GetScreenHeight() / 2 - 18, 28, RED);
+}
 void SpawnEnemy()
 {
 	if (enemyCounter < MAX_ENEMIES)
@@ -381,7 +386,6 @@ void DrawStructures()
 
 void GameOver()
 {
-	InitGameplayScreen();
 	isRunning = false;
 	return;
 }
@@ -393,6 +397,7 @@ void UpdateGameplayScreen(void)
 	{
 		if (IsKeyDown(KEY_ENTER))
 		{
+			InitGameplayScreen();
 			isRunning = true;
 		}
 		return;
@@ -462,8 +467,15 @@ void DrawGameplayScreen(void)
 {
 	if (!isRunning)
 	{
-		DrawStart();
-		return;
+		if (playerHitPoints <= 0)
+		{
+			DrawGameOver();
+			return;
+		}
+		else {
+			DrawStart();
+			return;
+		}
 	}
 	// TODO: Draw GAMEPLAY screen here!
 	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
