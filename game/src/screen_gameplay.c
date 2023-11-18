@@ -63,7 +63,7 @@ typedef struct Enemies {
 static int framesCounter = 0;
 static int finishScreen = 0;
 static float elapsedTime = 0.0f;
-
+static bool isRunning = false;
 
 static Vector2 cursorPosition;
 static Vector2 playerPosition;
@@ -107,6 +107,19 @@ Vector2 GetPointOnTrajectory(Vector2 origin, Vector2 target, float distance, int
 	return point;
 }
 
+void DrawStart()
+{
+	const char* pressEnterToStart = "Press [Enter] to start";
+	int textWidth = MeasureText(pressEnterToStart, 36);
+	DrawText(pressEnterToStart, GetScreenWidth() / 2 - textWidth / 2, GetScreenHeight() / 2 - 18, 36, RED);
+	return;
+}
+void DrawGameOver()
+{
+	const char* pressEnterToStart = "Game Over. Press [Enter] to go back to main menu.";
+	int textWidth = MeasureText(pressEnterToStart, 28);
+	DrawText(pressEnterToStart, GetScreenWidth() / 2 - textWidth / 2, GetScreenHeight() / 2 - 18, 28, RED);
+}
 void SpawnEnemy()
 {
 	if (enemyCounter < MAX_ENEMIES)
@@ -190,6 +203,14 @@ void InitGameplayScreen(void)
 	cursorPosition.y = (GetScreenHeight() / 2);
 	playerPosition.x = GetScreenWidth() / 2;
 	playerPosition.y = GetScreenHeight() - playerSize / 2;
+	playerHitPoints = 3;
+	killCounter = 0;
+	currentLevel = &level1;
+	elapsedTime = 0;
+	bulletCounter = 0;
+	enemyCounter = 0;
+	lastEnemySpawn = -1;
+	lastPlayerBulletSpawn = -1;
 }
 
 void DeleteBullet(int bulletIndex)
@@ -363,10 +384,25 @@ void DrawStructures()
 	return;
 }
 
+void GameOver()
+{
+	isRunning = false;
+	return;
+}
 
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
+	if (!isRunning)
+	{
+		if (IsKeyDown(KEY_ENTER))
+		{
+			InitGameplayScreen();
+			isRunning = true;
+		}
+		return;
+	}
+
 	float dt = GetFrameTime();
 	elapsedTime += dt;
 	gameClock = elapsedTime;
@@ -375,7 +411,7 @@ void UpdateGameplayScreen(void)
 
 	if (playerHitPoints <= 0)
 	{
-		finishScreen = 1;
+		GameOver();
 	}
 
 	if (IsKeyDown(KEY_A))
@@ -429,6 +465,18 @@ void DrawBullets()
 // Gameplay Screen Draw logic
 void DrawGameplayScreen(void)
 {
+	if (!isRunning)
+	{
+		if (playerHitPoints <= 0)
+		{
+			DrawGameOver();
+			return;
+		}
+		else {
+			DrawStart();
+			return;
+		}
+	}
 	// TODO: Draw GAMEPLAY screen here!
 	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
 	DrawBackground();
