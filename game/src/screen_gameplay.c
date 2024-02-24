@@ -73,7 +73,8 @@ static float playerSpeed = 150.0f;
 static float playerProjectileSpeed = 300.0f;
 static int playerBulletCounter = 0;
 static int lastPlayerBulletSpawn = -1;
-static int playerHitPoints = 3; 
+static int playerHitPoints = 3;
+static float playerHitTime = 0;
 
 static Enemy enemies[MAX_ENEMIES];
 static int enemyCounter = 0;
@@ -276,7 +277,6 @@ bool IsWallCollision(Vector2 bulletPosition)
 	}
 	return false;
 }
-
 
 void UpdateBullets()
 {
